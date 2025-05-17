@@ -1,0 +1,84 @@
+name: Deploy Next.js Site
+
+on:
+  # 在推送到主分支时触发
+  push:
+    branches: [main]
+  
+  # 允许手动触发工作流
+  workflow_dispatch:
+
+# 设置权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只允许同时部署一个工作流
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # 构建工作
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出代码
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 设置Node.js环境
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 安装Bun
+      - name: 安装Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      # 缓存依赖
+      - name: 缓存依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            **/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      # 安装依赖
+      - name: 安装依赖
+        run: bun install
+
+      # 构建项目
+      - name: 构建项目
+        run: bun run build
+
+      # 上传构建产物
+      - name: 上传构建产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  # 部署工作
+  deploy:
+    # 需要在构建之后
+    needs: build
+    
+    # 部署到GitHub Pages
+    runs-on: ubuntu-latest
+    
+    # 使用GitHub Pages的环境
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 部署到GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 

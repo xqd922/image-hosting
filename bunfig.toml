@@ -1,0 +1,8 @@
+[install]
+# 可以添加一些特定的Bun安装配置
+# 例如：
+# cache-directory = "./bun-cache"
+
+[runtime]
+# Bun运行时配置
+# 可以根据需要自定义 
